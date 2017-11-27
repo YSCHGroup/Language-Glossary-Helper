@@ -1,3 +1,4 @@
+#>Engelska-Svenska<#
 word-ord
 string-sträng
 wordtest-glosprov
