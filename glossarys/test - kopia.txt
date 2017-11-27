@@ -1,0 +1,4 @@
+#>Engelska-Dansk<#
+word-ord
+string-sträng
+wordtest-glosprov

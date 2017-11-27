@@ -55,25 +55,34 @@ function do-glossary([string]$glossary, [string]$mode) {
                     $word_translation = $_.ToString().Split("-")
                     $word = $word_translation[0]
                     $translation = $word_translation[1]
-            
-                    Write-Host "Translate '$word': " -f Yellow -NoNewline; $usertranslation = Read-Host;
-                    if (-not ($usertranslation.ToLower() -eq $translation)) {
-                        Write-Host "Wrong! Correct translation is '" -f Red -NoNewline; Write-Host $translation -f Yellow -NoNewline; Write-Host "'..." -f Red;
-                        $alltranslations += 1;
-                    }else {
-                        Write-Host "Correct!" -f Green;
-                        $correcttranslations += 1;
-                        $alltranslations += 1;
+                    
+                    # Get Examples of Sentences from thesaurus.com
+                    Write-Host "`n - Example Context for: '" -f DarkGray -NoNewline; Write-Host "$word" -f Yellow -NoNewline; Write-Host "'-" -f DarkGray;
+                    try {
+                        $website = Invoke-WebRequest -Uri http://www.thesaurus.com/browse/$word+?s=t -ErrorAction stop;
+                        $examples = $website.AllElements | Where {$_.TagName -eq "p"} -ErrorAction stop;
+                        ' " ' + $examples[2].innerHTML.replace("<B>", "").replace("</B>", "") + '"';
                     }
+                    catch {
+                        Write-Host "Example not found..." -f Red;
+                    }
+
                 }
             }
+        }else {
+            break;
+            break;
         }
     }
-    $score = [math]::Round($correcttranslations*100/$alltranslations)
-    if ($score -lt 50) { Write-Host "`nAlmost! You knew only $score% of the words..." -f Red }
-    if ($score -eq 50) { Write-Host "`nDecent! You knew 50% of the words." -f yellow }
-    if ($score -ge 50 -and $score -lt 100) { Write-Host "`nGood! You knew $score% of the words!.." -f yellow }
-    if ($score -eq 100) { Write-Host "`nGreat! You knew 100% of the words!" -f green }
+
+    if ($mode -lt 3) {
+        $score = [math]::Round($correcttranslations*100/$alltranslations)
+        if ($score -lt 50) { Write-Host "`nAlmost! You knew only $score% of the words..." -f Red }
+        if ($score -eq 50) { Write-Host "`nDecent! You knew 50% of the words." -f yellow }
+        if ($score -ge 50 -and $score -lt 100) { Write-Host "`nGood! You knew $score% of the words!.." -f yellow }
+        if ($score -eq 100) { Write-Host "`nGreat! You knew 100% of the words!" -f green }
+    }
+    
     Write-Host "`nDo the Glossary Again? [y/n]: " -f yellow -NoNewline; $again = Read-Host;
     if ($again.ToLower() -eq "y") {
         do-glossary $glossary $mode
@@ -123,12 +132,14 @@ if ($choice.ToLower() -eq "new") {
     Remove-Item "glossarys\$delglos.txt"
 
 }else {
-    Write-Host "Modes:" -f DarkGray;
-    Write-Host "1 - Words to Translations" -f DarkGray;
-    Write-Host "2 - Translations to Words" -f DarkGray;
-    Write-Host "3 - Read all words in a context  (Under construction...)" -f DarkGray;
-    Write-Host "Select: " -f Yellow -NoNewline; $glosmode = Read-Host;
-    if ($glosmode -le 3) {
-        do-glossary $choice $glosmode
+    if (Test-Path "glossarys\$choice.txt") {
+        Write-Host "Modes:" -f DarkGray;
+        Write-Host "1 - Words to Translations" -f DarkGray;
+        Write-Host "2 - Translations to Words" -f DarkGray;
+        Write-Host "3 - Read all words in a context (Require Internet and English Words Only)  (Under construction...)" -f DarkGray;
+        Write-Host "Select: " -f Yellow -NoNewline; $glosmode = Read-Host;
+        if ($glosmode -le 3) {
+            do-glossary $choice $glosmode
+        }
     }
 }
