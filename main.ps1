@@ -9,6 +9,11 @@ function do-glossary([string]$glossary, [string]$mode) {
     $atline = 0
     cls
     Write-Host "----= $glossary =----" -f Green;
+    
+            # Initialize some variables before start scanning file
+            $examplesfailed = 0
+            $totalexamplestried = 0
+
     Get-Content "glossarys\$glossary.txt" | ForEach-Object {
         if ($mode -eq 1) {
             $atline += 1;
@@ -57,14 +62,17 @@ function do-glossary([string]$glossary, [string]$mode) {
                     $translation = $word_translation[1]
                     
                     # Get Examples of Sentences from thesaurus.com
-                    Write-Host "`n - Example Context for: '" -f DarkGray -NoNewline; Write-Host "$word" -f Yellow -NoNewline; Write-Host "'-" -f DarkGray;
+                    Write-Host "`n - Example Context for '" -f DarkGray -NoNewline; Write-Host "$word" -f Yellow -NoNewline; Write-Host "':" -f DarkGray;
                     try {
                         $website = Invoke-WebRequest -Uri http://www.thesaurus.com/browse/$word+?s=t -ErrorAction stop;
                         $examples = $website.AllElements | Where {$_.TagName -eq "p"} -ErrorAction stop;
                         ' " ' + $examples[2].innerHTML.replace("<B>", "").replace("</B>", "") + '"';
+                        $totalexamplestried += 1;
                     }
                     catch {
                         Write-Host "Example not found..." -f Red;
+                        $examplesfailed += 1;
+                        $totalexamplestried += 1;
                     }
 
                 }
@@ -81,6 +89,9 @@ function do-glossary([string]$glossary, [string]$mode) {
         if ($score -eq 50) { Write-Host "`nDecent! You knew 50% of the words." -f yellow }
         if ($score -ge 50 -and $score -lt 100) { Write-Host "`nGood! You knew $score% of the words!.." -f yellow }
         if ($score -eq 100) { Write-Host "`nGreat! You knew 100% of the words!" -f green }
+    }elseif ($mode -eq 3) {
+        $fails = [math]::Round($examplesfailed/$totalexamplestried)
+        if ($fails -eq 1) { Write-Host "`nAll attempts failed... Are you sure you have an valid internet connection?" -f Red }
     }
     
     Write-Host "`nDo the Glossary Again? [y/n]: " -f yellow -NoNewline; $again = Read-Host;
